@@ -1,6 +1,7 @@
 # Secrets — API keys live only in .env
 .env
 .env.*
+!.env.example
 
 # Benchmark run data and large research files (kept local)
 sessions/
