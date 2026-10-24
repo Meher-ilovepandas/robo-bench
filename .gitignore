@@ -1,0 +1,19 @@
+# Secrets — API keys live only in .env
+.env
+.env.*
+
+# Benchmark run data and large research files (kept local)
+sessions/
+Paper/
+Paper.zip
+
+# Generated at runtime
+.current_run.py
+server.log
+vex/settings.json
+
+# Python / OS / editor
+__pycache__/
+*.pyc
+.DS_Store
+.claude/settings.local.json

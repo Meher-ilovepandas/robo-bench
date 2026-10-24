@@ -1,0 +1,67 @@
+# VEX AIM Benchmark Harness Configuration
+
+game_number: 1
+
+# Map logical model names to their underlying API implementations.
+# api_type options: "anthropic", "openai", "meta"
+models:
+  Opus:
+    api_type: anthropic
+    model_id: claude-opus-5-5
+    max_tokens: 64000   # thinking counts against this cap
+  Astra:
+    api_type: openai
+    model_id: gpt-6-astra
+    max_tokens: 64000   # reasoning tokens count against this cap (model max 128K)
+  Muse:
+    api_type: meta
+    model_id: muse-spark-1.3
+    max_tokens: 64000   # same cap for every model
+
+# Models no longer benchmarked. Their past experiments stay viewable (labeled with
+# this model id) but can't get new attempts.
+retired_models:
+  Fable: claude-fable-5-1
+
+# Order models are benchmarked (left to right)
+model_order:
+  - Opus
+  - Astra
+  - Muse
+
+benchmark:
+  code_attempts: 3      # Number of code generations per model
+  trials_per_code: 3    # Max physical runs per generated code
+  min_trials_before_next: 1   # Completed runs needed before the next attempt can be generated
+  run_duration_sec: 60  # Exact duration of each run
+  post_run_capture_sec: 3   # Keep filming this long after the program exits (ball still rolling)
+
+prompt:
+  # Images sent for attempt N = first game image + every frame from all trials of attempt N-1.
+  # Frames are downscaled for the prompt (originals stay on disk). If the total would exceed
+  # max_images, frames are evenly subsampled. One limit for all models so every model gets
+  # the same feedback: Muse accepts at most 50 images/request (Anthropic 100).
+  max_images: 50
+  image_max_side_px: 1280
+  telemetry_interval_sec: 1.0   # Telemetry rows sent to the model: one per this many seconds
+
+robot:
+  # VEX AIM WebSocket API (robot must be on Wi-Fi)
+  # AP mode default: 192.168.4.1  (connect laptop to robot's Wi-Fi hotspot)
+  # Station mode: set to the robot's IP on your local network
+  robot_ip: "192.168.5.100"
+
+camera:
+  # The overhead camera is found by resolution: the first camera that delivers
+  # width×height is used, and any camera that can't (e.g. the built-in FaceTime cam,
+  # max 1280×720) is refused. macOS renumbers cameras on re-plug, so index is only a hint.
+  index: null
+  width: 1920
+  height: 1080
+  capture_fps: 0.5      # Frames per second during a run (0.5 = 1 frame/2s = ~30 frames in 60s)
+  preview_fps: 5        # Preview refresh rate in TUI
+
+paths:
+  sessions_dir: sessions
+  system_prompt_file: system_prompt.txt
+  vex_api_file: vex_api.txt

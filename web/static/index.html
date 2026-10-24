@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VEX AIM Benchmark</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d1117;--surface:#161b22;--surface2:#21262d;--surface3:#2d333b;
+  --border:#30363d;--accent:#388bfd;--accent-dim:#1a3a6b;
+  --success:#3fb950;--warning:#d29922;--danger:#f85149;
+  --text:#c9d1d9;--text-muted:#8b949e;--text-bright:#e6edf3;
+  --radius:6px;--mono:'Fira Code','Cascadia Code',Consolas,monospace;
+  --sans:'Segoe UI',system-ui,-apple-system,sans-serif;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;overflow:hidden}
+
+/* ── Header ── */
+header{display:flex;align-items:center;gap:16px;padding:0 20px;height:50px;
+  background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0}
+.brand{font-size:15px;font-weight:700;color:var(--text-bright);margin-right:8px}
+.nav-tabs{display:flex;gap:2px}
+.nav-tab{padding:6px 16px;border-radius:var(--radius);border:none;
+  background:transparent;color:var(--text-muted);font-size:13px;font-weight:500;cursor:pointer;transition:.15s}
+.nav-tab:hover{background:var(--surface2);color:var(--text)}
+.nav-tab.active{background:var(--accent-dim);color:var(--accent)}
+.header-right{display:flex;align-items:center;gap:10px;margin-left:auto}
+.ws-dot{width:8px;height:8px;border-radius:50%;background:var(--danger);transition:.3s}
+.ws-dot.on{background:var(--success)}
+.status-chip{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;
+  border-radius:99px;font-size:11px;font-weight:600;text-transform:uppercase;
+  letter-spacing:.05em;background:var(--surface2);border:1px solid var(--border);color:var(--text-muted)}
+.status-chip.running{color:var(--accent);border-color:var(--accent);background:var(--accent-dim)}
+.status-chip.error{color:var(--danger);border-color:var(--danger)}
+.status-chip.generating{color:var(--warning);border-color:var(--warning)}
+.blink{animation:blink 1s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ── Layout ── */
+.app{display:flex;height:calc(100vh - 50px);overflow:hidden}
+
+/* ── Page visibility ── */
+.page{display:none;flex:1;overflow:hidden}
+.page.active{display:flex}
+
+/* ── Shared sidebar ── */
+.sidebar{width:240px;min-width:200px;background:var(--surface);
+  border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.sidebar-header{padding:12px 14px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.sidebar-header h2{font-size:11px;font-weight:600;text-transform:uppercase;
+  letter-spacing:.08em;color:var(--text-muted)}
+.sidebar-list{flex:1;overflow-y:auto;padding:6px}
+.sidebar-item{padding:8px 10px;border-radius:var(--radius);cursor:pointer;
+  transition:.12s;font-size:13px;color:var(--text);margin-bottom:2px}
+.sidebar-item:hover{background:var(--surface2)}
+.sidebar-item.active{background:var(--accent-dim);color:var(--accent)}
+.sidebar-item .item-sub{font-size:11px;color:var(--text-muted);margin-top:2px}
+.sidebar-item.active .item-sub{color:var(--accent);opacity:.7}
+
+/* ── Buttons ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  padding:6px 14px;border:none;border-radius:var(--radius);font-size:13px;
+  font-weight:500;cursor:pointer;transition:.15s;white-space:nowrap}
+.btn:hover:not(:disabled){filter:brightness(1.15)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-success{background:var(--success);color:#000}
+.btn-danger{background:var(--danger);color:#fff}
+.btn-warning{background:var(--warning);color:#000}
+.btn-ghost{background:transparent;color:var(--text-muted);border:1px solid var(--border)}
+.btn-ghost:hover:not(:disabled){background:var(--surface2);color:var(--text)}
+.btn-sm{padding:4px 10px;font-size:12px}
+.btn-full{width:100%;margin-bottom:5px}
+
+/* ── Forms ── */
+input[type=text],input[type=number],select,textarea{
+  background:var(--surface2);color:var(--text-bright);
+  border:1px solid var(--border);border-radius:var(--radius);
+  padding:6px 10px;font-size:13px;outline:none;font-family:var(--sans)}
+input[type=text]:focus,input[type=number]:focus,select:focus,textarea:focus{border-color:var(--accent)}
+textarea{resize:vertical;line-height:1.6;font-family:var(--mono);font-size:12px}
+label{font-size:12px;color:var(--text-muted)}
+
+/* ── Config page ── */
+.config-page{flex:1;overflow-y:auto;padding:30px;display:flex;gap:30px;flex-wrap:wrap;align-content:start}
+.config-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;
+  padding:20px;min-width:280px;flex:1}
+.config-card h3{font-size:13px;font-weight:600;color:var(--text-bright);margin-bottom:16px;
+  padding-bottom:8px;border-bottom:1px solid var(--border)}
+.field{margin-bottom:14px}
+.field label{display:block;margin-bottom:5px}
+.field-row{display:flex;gap:8px;align-items:center}
+.field-row input,.field-row select{flex:1}
+.robot-status{display:flex;align-items:center;gap:8px;font-size:12px;padding:8px 0}
+.robot-dot{width:8px;height:8px;border-radius:50%;background:var(--danger);flex-shrink:0}
+.robot-dot.on{background:var(--success)}
+.cam-preview{background:#000;border-radius:var(--radius);border:1px solid var(--border);
+  overflow:hidden;aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;
+  position:relative;margin-top:12px}
+.cam-preview img{width:100%;height:100%;object-fit:cover}
+.cam-no-signal{position:absolute;color:var(--text-muted);font-size:12px;text-align:center}
+
+/* ── Games page ── */
+.games-main{flex:1;overflow-y:auto;padding:24px}
+.game-editor{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:20px}
+.game-editor h3{font-size:14px;font-weight:600;color:var(--text-bright);margin-bottom:16px}
+.game-editor textarea{width:100%;height:200px;margin-top:6px}
+.game-title-row{display:flex;gap:10px;align-items:center;margin-bottom:14px}
+.game-title-row input{flex:1;font-size:15px;font-weight:600}
+.game-empty{display:flex;align-items:center;justify-content:center;height:300px;
+  flex-direction:column;gap:12px;color:var(--text-muted)}
+
+/* ── Experiments page ── */
+.experiments-page{flex:1;display:flex;overflow:hidden}
+.exp-sidebar{width:220px;background:var(--surface);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
+.exp-main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+
+/* ── Attempt area ── */
+.attempt-area{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.attempt-header{padding:12px 20px;border-bottom:1px solid var(--border);
+  background:var(--surface);display:flex;align-items:center;gap:12px;flex-shrink:0}
+.attempt-header .exp-info{font-size:12px;color:var(--text-muted)}
+.attempt-header .exp-info strong{color:var(--text-bright);font-size:13px}
+.attempt-tabs{display:flex;gap:4px;padding:10px 20px 0;flex-shrink:0;overflow-x:auto}
+.attempt-tab{padding:7px 16px;border-radius:var(--radius) var(--radius) 0 0;
+  border:1px solid var(--border);border-bottom:none;
+  background:var(--surface2);color:var(--text-muted);font-size:12px;
+  font-weight:600;cursor:pointer;transition:.12s;white-space:nowrap}
+.attempt-tab:hover{color:var(--text)}
+.attempt-tab.active{background:var(--bg);color:var(--accent);border-color:var(--border)}
+.attempt-tab .tag{font-size:10px;padding:1px 5px;border-radius:3px;margin-left:5px;vertical-align:middle}
+.tag-code{background:#1a3a6b;color:#58a6ff}
+.tag-run{background:#1a3a1a;color:var(--success)}
+
+.attempt-content{flex:1;display:flex;flex-direction:column;overflow:hidden;
+  background:var(--bg);border-top:1px solid var(--border)}
+
+/* content sub-tabs */
+.content-tabs{display:flex;gap:0;border-bottom:1px solid var(--border);
+  background:var(--surface);flex-shrink:0}
+.content-tab{padding:9px 18px;background:transparent;border:none;
+  border-bottom:2px solid transparent;color:var(--text-muted);font-size:13px;
+  font-weight:500;cursor:pointer;transition:.12s}
+.content-tab:hover{color:var(--text)}
+.content-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+
+.content-pane{display:none;flex:1;flex-direction:column;overflow:hidden}
+.content-pane.active{display:flex}
+
+/* ── Prompt pane ── */
+.prompt-pane{flex:1;overflow-y:auto;padding:20px}
+.prompt-text-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:14px;font-family:var(--mono);font-size:12px;line-height:1.7;
+  white-space:pre-wrap;color:var(--text);margin-bottom:16px;max-height:300px;overflow-y:auto}
+.prompt-images-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
+.prompt-img-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  overflow:hidden;cursor:pointer;transition:.12s}
+.prompt-img-card:hover{border-color:var(--accent)}
+.prompt-img-card img{width:100%;display:block}
+.prompt-img-label{padding:5px 8px;font-size:11px;color:var(--text-muted);font-family:var(--mono)}
+
+/* ── Code pane ── */
+.code-pane{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.code-toolbar{display:flex;align-items:center;gap:8px;padding:10px 16px;
+  border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0}
+.code-body{flex:1;overflow:auto;background:#282c34}
+.code-body pre{margin:0;padding:16px}
+.code-body pre code{font-family:var(--mono);font-size:13px;line-height:1.65}
+.run-controls{display:flex;align-items:center;gap:8px;padding:10px 16px;
+  border-top:1px solid var(--border);background:var(--surface);flex-shrink:0;flex-wrap:wrap}
+.timer-bar-wrap{height:3px;background:var(--surface3);border-radius:99px;
+  overflow:hidden;flex:1;min-width:80px}
+.timer-bar{height:100%;background:var(--accent);border-radius:99px;transition:width .9s linear}
+.timer-text{font-family:var(--mono);font-size:12px;color:var(--text-muted);white-space:nowrap}
+
+/* ── Run pane ── */
+.run-pane{flex:1;display:flex;overflow:hidden}
+.run-left{flex:1;display:flex;flex-direction:column;overflow:hidden;border-right:1px solid var(--border)}
+.run-right{width:300px;flex-shrink:0;display:flex;flex-direction:column;overflow:hidden}
+.run-section-title{padding:8px 14px;font-size:11px;font-weight:600;text-transform:uppercase;
+  letter-spacing:.07em;color:var(--text-muted);background:var(--surface);
+  border-bottom:1px solid var(--border);flex-shrink:0}
+.log-stream{flex:1;overflow-y:auto;padding:8px 14px;font-family:var(--mono);
+  font-size:12px;line-height:1.7;background:var(--bg)}
+.log-line{padding:1px 0;word-break:break-word}
+.log-line.info{color:var(--accent)}
+.log-line.error{color:var(--danger)}
+.log-line.warn{color:var(--warning)}
+.frames-grid{flex:1;overflow-y:auto;padding:10px;
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:6px;align-content:start}
+.frame-thumb{aspect-ratio:4/3;border-radius:4px;overflow:hidden;
+  border:1px solid var(--border);cursor:pointer;position:relative}
+.frame-thumb:hover{border-color:var(--accent)}
+.frame-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.frame-num{position:absolute;bottom:2px;right:4px;font-size:9px;
+  font-family:var(--mono);color:rgba(255,255,255,.7)}
+.telem-grid{padding:10px;display:flex;flex-direction:column;gap:6px;overflow-y:auto;flex:1}
+.telem-row{display:flex;justify-content:space-between;align-items:center;
+  padding:5px 8px;background:var(--surface);border-radius:4px;font-size:12px}
+.telem-key{color:var(--text-muted)}
+.telem-val{font-family:var(--mono);color:var(--text-bright);font-weight:600}
+.run-summary{padding:10px 14px;font-size:12px;color:var(--text-muted);
+  border-top:1px solid var(--border);background:var(--surface)}
+
+/* ── Empty states ── */
+.empty{display:flex;align-items:center;justify-content:center;
+  height:100%;color:var(--text-muted);font-size:13px;flex-direction:column;gap:8px;text-align:center}
+.empty-icon{font-size:32px;opacity:.4}
+
+/* ── Modal ── */
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;
+  align-items:center;justify-content:center}
+.modal.open{display:flex}
+.modal-box{background:#1e2128;border-radius:8px;border:1px solid var(--border);
+  max-width:92vw;max-height:90vh;overflow:auto;position:relative}
+.modal-close{position:absolute;top:10px;right:14px;background:none;border:none;
+  color:var(--text-muted);font-size:22px;cursor:pointer;z-index:1}
+.modal-close:hover{color:var(--text)}
+.modal-box img{display:block;max-width:90vw;max-height:85vh}
+
+/* ── Drive mode overlay ── */
+.drive-bar{padding:8px 16px;background:var(--accent-dim);border-bottom:1px solid var(--accent);
+  display:flex;align-items:center;gap:12px;font-size:12px;color:var(--text)}
+.drive-bar strong{color:var(--accent)}
+
+/* ── Notices (visible on every page) ── */
+.toast{position:fixed;right:20px;bottom:20px;z-index:300;max-width:440px;padding:12px 16px;
+  background:var(--surface2);border:1px solid var(--warning);border-left:4px solid var(--warning);
+  border-radius:var(--radius);color:var(--text-bright);font-size:13px;line-height:1.5;
+  box-shadow:0 6px 24px rgba(0,0,0,.5);display:none;cursor:pointer}
+.toast.show{display:block}
+
+/* ── Scrollbars ── */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:3px}
+</style>
+</head>
+<body>
+
+<header>
+  <span class="brand">VEX AIM Benchmark</span>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="navigate('config')">⚙ Config</button>
+    <button class="nav-tab" onclick="navigate('games')">🎮 Games</button>
+    <button class="nav-tab" id="nav-exp" onclick="navigate('experiments')" style="display:none">🔬 Experiment</button>
+  </div>
+  <div class="header-right">
+    <div class="ws-dot" id="ws-dot" title="WebSocket"></div>
+    <div class="status-chip" id="status-chip">ready</div>
+  </div>
+</header>
+
+<div class="app">
+
+<!-- ══════════════════ CONFIG PAGE ══════════════════ -->
+<div class="page active" id="page-config">
+  <div class="config-page">
+
+    <div class="config-card">
+      <h3>Robot Connection</h3>
+      <div class="field">
+        <label>Robot IP Address</label>
+        <div class="field-row" style="margin-top:5px">
+          <input type="text" id="robot-ip" value="192.168.5.100">
+          <button class="btn btn-ghost btn-sm" onclick="setRobotIp()">Set</button>
+        </div>
+      </div>
+      <div class="robot-status">
+        <div class="robot-dot" id="robot-dot"></div>
+        <span id="robot-status-text">Not connected</span>
+      </div>
+      <button class="btn btn-primary" style="width:100%" onclick="connectRobot()">⟳ Connect Robot</button>
+    </div>
+
+    <div class="config-card">
+      <h3>Data Directory</h3>
+      <div class="field">
+        <label>Sessions folder (all games/experiments saved here)</label>
+        <div class="field-row" style="margin-top:5px">
+          <input type="text" id="sessions-dir" placeholder="/path/to/sessions">
+          <button class="btn btn-ghost btn-sm" onclick="setSessionsDir()">Set</button>
+        </div>
+      </div>
+      <div id="sessions-dir-status" style="font-size:11px;color:var(--text-muted);margin-top:6px"></div>
+    </div>
+
+    <div class="config-card" style="min-width:340px">
+      <h3>Camera</h3>
+      <div class="field">
+        <div class="field-row">
+          <select id="cam-select"><option>Scanning…</option></select>
+          <button class="btn btn-ghost btn-sm" onclick="applyCam()">Apply</button>
+        </div>
+      </div>
+      <button class="btn btn-ghost btn-sm" style="width:100%" onclick="restartServer()"
+              title="Reconnects the camera after the Mac slept or the USB cable dropped">⟳ Restart server (fixes a dead camera)</button>
+      <div class="cam-preview">
+        <div class="cam-no-signal" id="cam-no-signal">📷<br>Initializing…</div>
+        <img id="cam-img" src="/api/camera/stream" alt="" style="display:none"
+             onload="camLoaded()" onerror="camError()">
+      </div>
+    </div>
+
+    <div class="config-card">
+      <h3>System Log</h3>
+      <div class="log-stream" id="sys-log" style="height:220px;background:var(--surface2);border-radius:var(--radius)"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════ GAMES PAGE ══════════════════ -->
+<div class="page" id="page-games">
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h2>Games</h2>
+      <button class="btn btn-primary btn-sm" onclick="newGame()">+ New</button>
+    </div>
+    <div class="sidebar-list" id="games-list"></div>
+  </div>
+  <div class="games-main" id="games-main">
+    <div class="game-empty">
+      <div class="empty-icon">🎮</div>
+      <div>Select a game or create a new one</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ EXPERIMENTS PAGE ══════════════════ -->
+<div class="page" id="page-experiments">
+
+  <div class="exp-sidebar">
+    <div class="sidebar-header">
+      <h2 id="exp-game-name" style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Experiments</h2>
+      <button class="btn btn-primary btn-sm" onclick="newExperiment()">+ New</button>
+    </div>
+    <div class="sidebar-list" id="experiments-list"></div>
+  </div>
+
+  <div class="exp-main" id="exp-main">
+    <div class="empty"><div class="empty-icon">🔬</div><div>Select an experiment</div></div>
+  </div>
+
+</div>
+
+</div><!-- .app -->
+
+<div class="toast" id="toast" onclick="this.classList.remove('show')"></div>
+
+<!-- Image modal -->
+<div class="modal" id="img-modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal()">×</button>
+    <img id="modal-img" src="" alt="">
+  </div>
+</div>
+
+<script>
+/* ================================================================
+   VEX AIM Benchmark — Frontend JS
+   ================================================================ */
+
+// ── State ──────────────────────────────────────────────────────── //
+const S = {
+  page: 'config',
+  game_id: null,
+  exp_id: null,
+  attempt_id: null,
+  content_tab: 'prompt',  // prompt | code | run
+  run_id: null,
+  live_attempt: null,
+  harness_status: 'ready',
+  robot_connected: false,
+};
+
+let modelIds = {};        // name -> exact model_id string passed to API
+let liveAttempts = {};   // exp_id -> [attempt objects]
+let liveRunLog = [];
+let liveFrames = [];
+let liveTelem = {};
+let driveMode = false;
+
+// ── WebSocket ──────────────────────────────────────────────────── //
+let ws;
+function connectWS() {
+  ws = new WebSocket(`ws://${location.host}/ws`);
+  ws.onopen = () => { ge('ws-dot').classList.add('on'); sysLog('Connected.', 'info'); syncHarnessState(); };
+  ws.onclose = () => { ge('ws-dot').classList.remove('on'); setTimeout(connectWS, 3000); };
+  ws.onmessage = e => { try { handleMsg(JSON.parse(e.data)); } catch(_) {} };
+}
+
+function handleMsg(m) {
+  switch (m.type) {
+    case 'log':
+      sysLog(m.text);
+      if (m.harness_log && m.attempt_id === S.attempt_id) appendHarnessLog(m.text);
+      break;
+    case 'robot_log':    if (isLiveView()) appendRunLog(m.text); break;
+    case 'status':
+      setStatus(m.status);
+      if (m.status === 'running') S.live_attempt = m.attempt_id || null;   // null = drive mode
+      break;
+    case 'robot_status': updateRobotStatus(m.connected, m.port); break;
+    case 'telemetry':    if (isLiveView()) updateTelem(m.data); break;
+    case 'timer':        if (isLiveView()) updateTimer(m.elapsed, m.total); break;
+    case 'prompt_ready': handlePromptReady(m); break;
+    case 'code_generated': handleCodeGenerated(m); break;
+    case 'run_complete': handleRunComplete(m); break;
+    case 'drive_turn':   updateDriveBar(m.turn, m.max); break;
+    case 'drive_action': if (isLiveView()) appendRunLog(`[T${m.turn}] → ${m.text}`); break;
+    case 'drive_result': if (isLiveView()) appendRunLog(`[T${m.turn}] ← ${JSON.stringify(m.result)}`); break;
+    case 'drive_photo':  if (isLiveView()) addFrame(m.b64, `T${m.turn}`); break;
+    case 'run_frame':    if (isLiveView()) addFrame(m.b64, m.label); break;
+    case 'notice':       notify(m.text); break;
+  }
+}
+
+// Messages sent while the page was closed/disconnected are lost — ask the server
+async function syncHarnessState() {
+  const cfg = await api('/api/config');
+  if (!cfg.status) return;
+  setStatus(cfg.busy === 'running' || cfg.busy === 'driving' ? 'running' : cfg.busy || cfg.status);
+  S.live_attempt = cfg.live ? cfg.live.attempt_id : null;
+  if (S.exp_id) loadAttempts(S.exp_id);
+}
+
+// Live run output belongs to the attempt being run, not whichever one is on screen
+function isLiveView() { return !S.live_attempt || S.live_attempt === S.attempt_id; }
+
+// ── Navigation ─────────────────────────────────────────────────── //
+function navigate(page, options = {}) {
+  S.page = page;
+  Object.assign(S, options);
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  ge(`page-${page}`).classList.add('active');
+  document.querySelector(`.nav-tab[onclick*="${page}"]`).classList.add('active');
+
+  if (page === 'games')       loadGames();
+  if (page === 'experiments') loadExperiments();
+  if (page === 'config')      loadConfig();
+}
+
+// ── Config ─────────────────────────────────────────────────────── //
+async function loadConfig() {
+  const cfg = await api('/api/config');
+  modelIds = cfg.model_ids || {};
+  ge('robot-ip').value = cfg.robot_ip || '';
+  ge('sessions-dir').value = cfg.sessions_dir || '';
+  updateRobotStatus(cfg.robot_connected, cfg.robot_port);
+  loadCameras();
+}
+
+async function setRobotIp() {
+  const ip = ge('robot-ip').value.trim();
+  await api('/api/config/robot_ip', 'POST', {robot_ip: ip});
+  sysLog(`Robot IP set to ${ip}`, 'info');
+}
+
+async function connectRobot() {
+  sysLog('Connecting to robot…', 'info');
+  const r = await api('/api/robot/connect', 'POST', {});
+  updateRobotStatus(r.connected, r.port);
+  sysLog(r.connected ? `Connected: ${r.port}` : 'Not reachable.', r.connected ? 'info' : 'warn');
+}
+
+function updateRobotStatus(connected, port) {
+  S.robot_connected = connected;
+  ge('robot-dot').classList.toggle('on', connected);
+  ge('robot-status-text').textContent = connected ? (port || 'Connected') : 'Not connected';
+}
+
+async function setSessionsDir() {
+  const d = ge('sessions-dir').value.trim();
+  const r = await api('/api/config/sessions_dir', 'POST', {sessions_dir: d});
+  ge('sessions-dir-status').textContent = r.ok ? `✓ Using: ${r.sessions_dir}` : `Error: ${r.error}`;
+}
+
+async function loadCameras() {
+  const cams = await api('/api/camera/scan');
+  const sel = ge('cam-select');
+  sel.innerHTML = '';
+  (Array.isArray(cams) ? cams : []).forEach(c => {
+    const o = document.createElement('option'); o.value = c.index; o.textContent = c.label;
+    if (c.in_use) o.selected = true;   // so "Apply" without a choice keeps the current camera
+    sel.appendChild(o);
+  });
+}
+async function applyCam() {
+  const r = await api('/api/camera/select', 'POST', {index: parseInt(ge('cam-select').value)});
+  if (!r.ok) notify(`Camera not changed: ${r.error}`);
+  const img = ge('cam-img');
+  img.style.display = 'none'; ge('cam-no-signal').style.display = 'flex';
+  img.src = '/api/camera/stream?' + Date.now();
+}
+async function restartServer() {
+  if (!confirm('Restart the server? Takes about 15 seconds; nothing is lost.')) return;
+  const r = await api('/api/server/restart', 'POST', {});
+  if (!r.ok) { notify(`Cannot restart: ${r.error}`); return; }
+  notify('Restarting server… the page will reload in about 15 seconds.');
+  setTimeout(() => location.reload(), 15000);
+}
+
+function camLoaded() {
+  ge('cam-img').style.display = 'block'; ge('cam-no-signal').style.display = 'none';
+}
+function camError() {
+  ge('cam-img').style.display = 'none'; ge('cam-no-signal').style.display = 'flex';
+  setTimeout(() => { ge('cam-img').src = '/api/camera/stream?' + Date.now(); }, 4000);
+}
+
+// ── Games ──────────────────────────────────────────────────────── //
+let games = [];
+async function loadGames() {
+  games = asList(await api('/api/games'));
+  renderGamesList();
+  if (S.game_id) showGameEditor(games.find(g => g.id === S.game_id));
+}
+
+function renderGamesList() {
+  const el = ge('games-list');
+  el.innerHTML = '';
+  if (!games.length) { el.innerHTML = '<div style="padding:12px;font-size:12px;color:var(--text-muted)">No games yet.</div>'; return; }
+  games.forEach(g => {
+    const div = document.createElement('div');
+    div.className = 'sidebar-item' + (g.id === S.game_id ? ' active' : '');
+    div.innerHTML = `<div>${esc(g.name)}</div><div class="item-sub">${g.n_experiments} experiment${g.n_experiments!==1?'s':''}</div>`;
+    div.onclick = () => { S.game_id = g.id; renderGamesList(); showGameEditor(g); };
+    el.appendChild(div);
+  });
+}
+
+function showGameEditor(game) {
+  if (!game) return;
+  ge('games-main').innerHTML = `
+    <div class="game-editor">
+      <div class="game-title-row">
+        <input type="text" id="game-name" value="${esc(game.name)}" placeholder="Game name">
+        <button class="btn btn-ghost btn-sm" onclick="saveGame()">Save</button>
+        <button class="btn btn-primary btn-sm" onclick="goToExperiments()">Open Experiments →</button>
+      </div>
+      <label>Game Prompt — describe the objective, targets, and scoring</label>
+      <textarea id="game-prompt" style="height:240px;width:100%;margin-top:6px">${esc(game.prompt)}</textarea>
+      <div style="margin-top:10px;display:flex;gap:8px">
+        <button class="btn btn-primary" onclick="saveGame()">💾 Save Prompt</button>
+        <span style="font-size:11px;color:var(--text-muted);align-self:center" id="game-save-status"></span>
+      </div>
+    </div>`;
+}
+
+async function newGame() {
+  const g = await api('/api/games', 'POST', {name: 'New Game', prompt: ''});
+  games.push(g); S.game_id = g.id;
+  renderGamesList(); showGameEditor(g);
+}
+
+async function saveGame() {
+  if (!S.game_id) return;
+  const name = ge('game-name').value.trim();
+  const prompt = ge('game-prompt').value;
+  const g = await api(`/api/games/${S.game_id}`, 'PUT', {name, prompt});
+  const idx = games.findIndex(x => x.id === g.id);
+  if (idx >= 0) games[idx] = g;
+  renderGamesList();
+  ge('game-save-status').textContent = '✓ Saved';
+  setTimeout(() => { const el = ge('game-save-status'); if(el) el.textContent = ''; }, 2000);
+}
+
+function goToExperiments() {
+  if (!S.game_id) return;
+  ge('nav-exp').style.display = '';
+  navigate('experiments');
+}
+
+// ── Experiments ────────────────────────────────────────────────── //
+let experiments = [];
+async function loadExperiments() {
+  if (!S.game_id) return;
+  const game = games.find(g => g.id === S.game_id) || await api(`/api/games/${S.game_id}`);
+  ge('exp-game-name').textContent = game.name;
+  experiments = asList(await api(`/api/games/${S.game_id}/experiments`));
+  renderExpList();
+  if (S.exp_id) await loadAttempts(S.exp_id);
+}
+
+function renderExpList() {
+  const el = ge('experiments-list');
+  el.innerHTML = '';
+  if (!experiments.length) {
+    el.innerHTML = '<div style="padding:12px;font-size:12px;color:var(--text-muted)">No experiments yet.</div>';
+    return;
+  }
+  experiments.forEach(e => {
+    const div = document.createElement('div');
+    div.className = 'sidebar-item' + (e.id === S.exp_id ? ' active' : '');
+    const mid = modelIds[e.model] || e.model;
+    div.innerHTML = `<div>${esc(e.name)}</div>
+      <div class="item-sub">${esc(e.model)} (${esc(mid)}) · ${e.mode} · ${e.n_attempts} attempt${e.n_attempts!==1?'s':''}</div>`;
+    div.onclick = () => selectExp(e.id);
+    el.appendChild(div);
+  });
+}
+
+async function selectExp(exp_id) {
+  S.exp_id = exp_id; S.attempt_id = null; S.content_tab = 'prompt';
+  renderExpList();
+  await loadAttempts(exp_id);
+}
+
+async function newExperiment() {
+  if (!S.game_id) return;
+  // Simple inline form
+  const cfg = await api('/api/config');
+  modelIds = cfg.model_ids || {};
+  const models = cfg.models || [];
+  const modelOpts = models.map(m => {
+    const mid = modelIds[m] || m;
+    return `<option value="${esc(m)}">${esc(m)} — ${esc(mid)}</option>`;
+  }).join('');
+  ge('exp-main').innerHTML = `
+    <div style="padding:24px;max-width:400px">
+      <h3 style="margin-bottom:16px;color:var(--text-bright)">New Experiment</h3>
+      <div class="field"><label>Name</label><input type="text" id="new-exp-name" style="width:100%;margin-top:4px" placeholder="Optional"></div>
+      <div class="field" style="margin-top:12px"><label>Model</label>
+        <select id="new-exp-model" style="width:100%;margin-top:4px">${modelOpts}</select></div>
+      <div class="field" style="margin-top:12px"><label>Mode</label>
+        <select id="new-exp-mode" style="width:100%;margin-top:4px">
+          <option value="code">Pure Code — model generates Python code</option>
+          <option value="drive">LLM Drive — model controls robot turn-by-turn</option>
+        </select></div>
+      <div style="margin-top:16px;display:flex;gap:8px">
+        <button class="btn btn-primary" onclick="createExp()">Create</button>
+        <button class="btn btn-ghost" onclick="loadExperiments()">Cancel</button>
+      </div>
+    </div>`;
+}
+
+async function createExp() {
+  const name = (ge('new-exp-name')||{}).value || '';
+  const model = ge('new-exp-model').value;
+  const mode = ge('new-exp-mode').value;
+  const e = await api(`/api/games/${S.game_id}/experiments`, 'POST', {model, mode, name});
+  if (!e.id) { notify(`Cannot create experiment: ${e.error || 'unknown error'}`); return; }
+  experiments.push(e);
+  await selectExp(e.id);
+  renderExpList();
+}
+
+// ── Attempts ───────────────────────────────────────────────────── //
+async function loadAttempts(exp_id) {
+  liveAttempts[exp_id] = asList(await api(`/api/games/${S.game_id}/experiments/${exp_id}/attempts`));
+  renderExpPanel();
+  // renderExpPanel leaves "Loading…" placeholders — refill them for the open attempt
+  if (S.attempt_id && exp_id === S.exp_id) await loadAttemptData();
+}
+
+function renderExpPanel() {
+  const exp = experiments.find(e => e.id === S.exp_id);
+  if (!exp) return;
+  const attempts = liveAttempts[S.exp_id] || [];
+  driveMode = exp.mode === 'drive';
+
+  let html = `
+    <div class="attempt-area">
+      <div class="attempt-header">
+        <div class="exp-info">
+          <strong>${esc(exp.name)}</strong><br>
+          Model: ${esc(exp.model)} <span style="color:var(--text-dim);font-size:11px">(${esc(modelIds[exp.model] || exp.model)})</span> &nbsp;·&nbsp; Mode: ${exp.mode === 'drive' ? '🤖 LLM Drive' : '💻 Pure Code'}
+        </div>
+        <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+          ${driveMode ? `<label style="font-size:12px">Max turns <input type="number" id="max-turns" value="100" min="1" max="500" style="width:60px;margin-left:4px"></label>` : ''}
+          <button class="btn btn-primary btn-sm" onclick="newAttempt()" id="btn-new-attempt">
+            ${driveMode ? '▶ Start Drive Session' : '✦ New Attempt (Generate Code)'}
+          </button>
+        </div>
+      </div>
+      ${driveMode ? '<div class="drive-bar" id="drive-bar" style="display:none">Drive session active — Turn <strong id="drive-turn">0</strong> / <span id="drive-max">100</span> &nbsp;<button class="btn btn-danger btn-sm" onclick="stopRun()">■ Stop</button></div>' : ''}
+      <div class="attempt-tabs" id="attempt-tabs">`;
+
+  if (!attempts.length) {
+    html += `<div style="padding:8px 4px;font-size:12px;color:var(--text-muted)">No attempts yet — click "New Attempt" to begin.</div>`;
+  } else {
+    attempts.forEach(a => {
+      const tags = (a.has_code ? '<span class="tag tag-code">code</span>' : '') +
+                   (a.n_runs > 0 ? `<span class="tag tag-run">${a.n_runs} run${a.n_runs>1?'s':''}</span>` : '');
+      html += `<div class="attempt-tab${a.id===S.attempt_id?' active':''}" onclick="selectAttempt('${a.id}')">
+        ${esc(a.id.replace('attempt_','#'))}${tags}</div>`;
+    });
+  }
+
+  html += `</div>
+      <div class="attempt-content" id="attempt-content">`;
+
+  if (S.attempt_id) {
+    html += renderAttemptContent(exp);
+  } else {
+    html += `<div class="empty"><div class="empty-icon">☝</div>Select an attempt above</div>`;
+  }
+
+  html += `</div></div>`;
+  ge('exp-main').innerHTML = html;
+}
+
+function renderAttemptContent(exp) {
+  return `
+    <div class="content-tabs">
+      <button class="content-tab${S.content_tab==='prompt'?' active':''}" onclick="setContentTab('prompt')">🖼 Prompt</button>
+      <button class="content-tab${S.content_tab==='code'?' active':''}" onclick="setContentTab('code')">📝 Code</button>
+      <button class="content-tab${S.content_tab==='run'?' active':''}" onclick="setContentTab('run')">▶ Run</button>
+      <button class="content-tab${S.content_tab==='reasoning'?' active':''}" onclick="setContentTab('reasoning')">🧠 Reasoning</button>
+      <button class="content-tab${S.content_tab==='trace'?' active':''}" onclick="setContentTab('trace')">📋 Trace</button>
+      <button class="content-tab${S.content_tab==='harness'?' active':''}" onclick="setContentTab('harness')">🖥 Harness</button>
+    </div>
+    <div class="content-pane${S.content_tab==='prompt'?' active':''}" id="pane-prompt">
+      <div class="prompt-pane" id="prompt-pane-inner"><div class="empty">Loading…</div></div>
+    </div>
+    <div class="content-pane${S.content_tab==='code'?' active':''}" id="pane-code">
+      <div class="code-pane">
+        <div class="code-toolbar">
+          <span style="font-size:11px;color:var(--text-muted)">python</span>
+          <div style="flex:1"></div>
+          <button class="btn btn-ghost btn-sm" onclick="copyCode()">⎘ Copy</button>
+        </div>
+        <div class="code-body"><pre><code class="language-python" id="code-display">Loading…</code></pre></div>
+        ${driveMode ? '' : `
+        <div class="run-controls">
+          <button class="btn btn-success btn-sm" id="btn-start-run" onclick="startRun()">▶ Start Run</button>
+          <button class="btn btn-danger btn-sm" onclick="stopRun()">■ Stop</button>
+        </div>`}
+      </div>
+    </div>
+    <div class="content-pane${S.content_tab==='run'?' active':''}" id="pane-run">
+      <div class="run-pane">
+        <div class="run-left">
+          <div class="run-section-title" style="display:flex;align-items:center;gap:8px">
+            Robot Console
+            ${driveMode ? '' : `<button class="btn btn-success btn-sm" onclick="startRun()">▶ Start Run</button>`}
+            <select id="run-select" onchange="S.run_id=this.value; loadRunData(this.value)" style="display:none;font-size:11px"></select>
+            <div style="flex:1"></div>
+            <div class="timer-bar-wrap" style="width:120px"><div class="timer-bar" id="timer-bar" style="width:0%"></div></div>
+            <span class="timer-text" id="timer-text">0s</span>
+          </div>
+          <div class="log-stream" id="run-log-stream"></div>
+          <div class="run-summary" id="run-summary" style="display:none"></div>
+        </div>
+        <div class="run-right" style="display:flex;flex-direction:column">
+          <div class="run-section-title">Frames <span id="frame-count" style="opacity:.6;font-weight:400">0</span></div>
+          <div class="frames-grid" id="frames-grid"></div>
+          <div class="run-section-title" style="margin-top:0">Telemetry</div>
+          <div class="telem-grid" id="telem-grid"></div>
+        </div>
+      </div>
+    </div>
+    <div class="content-pane${S.content_tab==='reasoning'?' active':''}" id="pane-reasoning">
+      <div class="prompt-pane" id="reasoning-pane-inner"><div class="empty">No reasoning saved yet.</div></div>
+    </div>
+    <div class="content-pane${S.content_tab==='trace'?' active':''}" id="pane-trace">
+      <div class="prompt-pane" id="trace-pane-inner"><div class="empty">No trace yet for this attempt.</div></div>
+    </div>
+    <div class="content-pane${S.content_tab==='harness'?' active':''}" id="pane-harness">
+      <div class="log-stream" id="harness-log-stream" style="height:100%;padding:12px;font-size:12px"></div>
+    </div>`;
+}
+
+async function selectAttempt(aid) {
+  S.attempt_id = aid;
+  S.content_tab = 'prompt';
+  liveRunLog = []; liveFrames = []; liveTelem = {};
+  renderExpPanel();
+  loadAttemptData();
+}
+
+function setContentTab(tab) {
+  S.content_tab = tab;
+  document.querySelectorAll('.content-tab').forEach(t =>
+    t.classList.toggle('active', t.textContent.toLowerCase().includes(tab)));
+  document.querySelectorAll('.content-pane').forEach(p => p.classList.remove('active'));
+  const pane = ge(`pane-${tab}`);
+  if (pane) pane.classList.add('active');
+  // Reload trace from disk when switching to that tab
+  if (tab === 'trace' && S.attempt_id) {
+    const {game_id, exp_id, attempt_id} = S;
+    api(`/api/games/${game_id}/experiments/${exp_id}/attempts/${attempt_id}/trace`).then(r => {
+      const el = ge('trace-pane-inner');
+      if (!el) return;
+      el.innerHTML = r.text
+        ? `<div class="prompt-text-box" style="white-space:pre-wrap;font-family:var(--mono);font-size:11px">${esc(r.text)}</div>`
+        : '<div class="empty">No trace saved for this attempt.</div>';
+    });
+  }
+  // Always reload harness log from disk when switching to that tab
+  if (tab === 'harness' && S.attempt_id) {
+    const {game_id, exp_id, attempt_id} = S;
+    const el = ge('harness-log-stream');
+    if (el) {
+      api(`/api/games/${game_id}/experiments/${exp_id}/attempts/${attempt_id}/harness_log`).then(r => {
+        el.innerHTML = '';
+        if (r.text) r.text.split('\n').filter(Boolean).forEach(line => appendHarnessLog(line));
+        else el.innerHTML = '<div class="empty" style="padding:12px">No harness log yet for this attempt.</div>';
+      });
+    }
+  }
+}
+
+async function loadAttemptData() {
+  if (!S.attempt_id) return;
+  const {game_id, exp_id, attempt_id} = S;
+
+  const stale = () => S.attempt_id !== attempt_id || S.exp_id !== exp_id;
+
+  // Load prompt tab
+  const input = await api(`/api/games/${game_id}/experiments/${exp_id}/attempts/${attempt_id}/input`);
+  if (stale()) return;
+  const pane = ge('prompt-pane-inner');
+  if (pane) {
+    let html = '';
+    if (input.prompt_text) html += `<div class="prompt-text-box">${esc(input.prompt_text)}</div>`;
+    if (input.images && input.images.length) {
+      html += `<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">${input.images.length} image${input.images.length!==1?'s':''} sent with this prompt</div>`;
+      html += '<div class="prompt-images-grid">';
+      input.images.forEach(img => {
+        html += `<div class="prompt-img-card" onclick="openImg('data:image/jpeg;base64,${img.b64}')">
+          <img src="data:image/jpeg;base64,${img.b64}" loading="lazy">
+          <div class="prompt-img-label">${esc(img.name)}</div></div>`;
+      });
+      html += '</div>';
+    }
+    if (!input.prompt_text && !input.images?.length) html = '<div class="empty">No prompt data saved yet.</div>';
+    pane.innerHTML = html;
+  }
+
+  // Load code tab
+  const codeEl = ge('code-display');
+  if (codeEl) {
+    const {code} = await api(`/api/games/${game_id}/experiments/${exp_id}/attempts/${attempt_id}/code`);
+    if (stale()) return;
+    codeEl.textContent = code || '-- No code generated yet --';
+    if (code) { delete codeEl.dataset.highlighted; hljs.highlightElement(codeEl); }
+  }
+
+  // Load reasoning tab if present
+  const reasoningEl = ge('reasoning-pane-inner');
+  if (reasoningEl) {
+    const {reasoning} = await api(`/api/games/${game_id}/experiments/${exp_id}/attempts/${attempt_id}/reasoning`);
+    if (stale()) return;
+    if (reasoning) {
+      reasoningEl.innerHTML = `<div class="prompt-text-box" style="white-space:pre-wrap;font-family:var(--mono);font-size:12px">${esc(reasoning)}</div>`;
+    } else {
+      reasoningEl.innerHTML = '<div class="empty">No reasoning saved for this attempt.</div>';
+    }
+  }
+
+  // Load trace tab
+  const traceEl = ge('trace-pane-inner');
+  if (traceEl) {
+    const {text: traceText} = await api(`/api/games/${game_id}/experiments/${exp_id}/attempts/${attempt_id}/trace`);
+    if (stale()) return;
+    traceEl.innerHTML = traceText
+      ? `<div class="prompt-text-box" style="white-space:pre-wrap;font-family:var(--mono);font-size:11px">${esc(traceText)}</div>`
+      : '<div class="empty">No trace saved for this attempt.</div>';
+  }
+
+  // Load harness log tab
+  const harnessEl = ge('harness-log-stream');
+  if (harnessEl) {
+    const {text} = await api(`/api/games/${game_id}/experiments/${exp_id}/attempts/${attempt_id}/harness_log`);
+    if (stale()) return;
+    harnessEl.innerHTML = '';
+    if (text) {
+      text.split('\n').filter(Boolean).forEach(line => appendHarnessLog(line));
+    } else {
+      harnessEl.innerHTML = '<div class="empty" style="padding:12px">No harness log yet for this attempt.</div>';
+    }
+  }
+
+  // Load most recent run data — unless this attempt is running right now, in which
+  // case the Run pane shows only the live trial (no old frames mixed in)
+  const attempt = (liveAttempts[exp_id]||[]).find(a => a.id === attempt_id);
+  if (S.live_attempt === attempt_id && S.harness_status === 'running') return;
+  if (attempt && attempt.runs && attempt.runs.length) {
+    if (!attempt.runs.includes(S.run_id)) S.run_id = attempt.runs[attempt.runs.length - 1];
+    const sel = ge('run-select');
+    if (sel) {
+      sel.innerHTML = attempt.runs.map((r, i) =>
+        `<option value="${r}"${r === S.run_id ? ' selected' : ''}>Trial ${i + 1} (${r})</option>`).join('');
+      sel.style.display = '';
+    }
+    await loadRunData(S.run_id);
+  }
+}
+
+async function loadRunData(run_id) {
+  const {game_id, exp_id, attempt_id} = S;
+  const stale = () => S.attempt_id !== attempt_id || S.run_id !== run_id;
+  // Console
+  const {text} = await api(`/api/games/${game_id}/experiments/${exp_id}/attempts/${attempt_id}/runs/${run_id}/console`);
+  if (stale()) return;
+  liveRunLog = text ? text.split('\n').filter(Boolean) : [];
+  const logEl = ge('run-log-stream');
+  if (logEl) { logEl.innerHTML = ''; liveRunLog.forEach(l => appendRunLog(l)); }
+
+  // Frames
+  const frames = await api(`/api/games/${game_id}/experiments/${exp_id}/attempts/${attempt_id}/runs/${run_id}/frames`);
+  if (stale()) return;
+  liveFrames = frames;
+  const fg = ge('frames-grid');
+  if (fg) { fg.innerHTML = ''; frames.forEach(f => addFrame(f.b64, f.name)); }
+
+  // Telemetry
+  const tg = ge('telem-grid'); if (tg) tg.innerHTML = '';
+  const telem = await api(`/api/games/${game_id}/experiments/${exp_id}/attempts/${attempt_id}/runs/${run_id}/telemetry`);
+  if (stale()) return;
+  liveTelem = telem;
+  if (Object.keys(telem).length) updateTelem(telem);
+
+  // Summary
+  const summary = await api(`/api/games/${game_id}/experiments/${exp_id}/attempts/${attempt_id}/runs/${run_id}/summary`);
+  if (stale()) return;
+  const sumEl = ge('run-summary');
+  if (sumEl && summary.run_id) {
+    sumEl.style.display = '';
+    sumEl.textContent = `Run ${summary.run_id} · ${summary.elapsed_sec}s · ${summary.frame_count} frames · ${summary.console_lines} log lines`;
+  }
+}
+
+// ── Generate / Run ─────────────────────────────────────────────── //
+async function newAttempt() {
+  if (!S.exp_id) return;
+  if (driveMode) {
+    const maxTurns = parseInt((ge('max-turns')||{}).value || 100);
+    const r = await api('/api/drive/start', 'POST', {game_id: S.game_id, exp_id: S.exp_id, max_turns: maxTurns});
+    r.ok ? sysLog('Drive session started.', 'info') : notify(`Cannot start: ${r.error}`);
+  } else {
+    const r = await api(`/api/games/${S.game_id}/experiments/${S.exp_id}/attempts/generate`, 'POST', {});
+    r.ok ? sysLog('Generating code…', 'info') : notify(`Cannot generate: ${r.error}`);
+  }
+}
+
+async function startRun() {
+  if (!S.attempt_id) return;
+  // Switch to Run tab so live logs and frames are visible immediately
+  liveRunLog = []; liveFrames = []; liveTelem = {};
+  const r = await api(`/api/games/${S.game_id}/experiments/${S.exp_id}/attempts/${S.attempt_id}/run`, 'POST', {});
+  r.ok ? sysLog('Run started.', 'info') : notify(`Cannot start run: ${r.error}`);
+  if (!r.ok) return;
+  // Fresh Run pane for the live trial; other tabs keep their loaded content
+  ['run-log-stream', 'frames-grid', 'telem-grid'].forEach(id => { const el = ge(id); if (el) el.innerHTML = ''; });
+  const fc = ge('frame-count'); if (fc) fc.textContent = '0';
+  const rs = ge('run-summary'); if (rs) rs.style.display = 'none';
+  setContentTab('run');
+}
+
+async function stopRun() {
+  await api('/api/run/stop', 'POST', {});
+  sysLog('Stop requested.', 'warn');
+}
+
+// ── WS event handlers ──────────────────────────────────────────── //
+function handlePromptReady(m) {
+  if (m.exp_id !== S.exp_id) return;
+  // Show the new attempt; its prompt is already on disk, so loadAttempts fills every pane
+  S.attempt_id = m.attempt_id;
+  S.content_tab = 'prompt';
+  loadAttempts(S.exp_id);
+}
+
+function handleCodeGenerated(m) {
+  if (m.exp_id !== S.exp_id) return;
+  S.attempt_id = m.attempt_id;
+  S.content_tab = 'code';
+  loadAttempts(S.exp_id);
+}
+
+function handleRunComplete(m) {
+  S.live_attempt = null;
+  if (m.exp_id !== S.exp_id) return;
+  if (S.attempt_id === m.attempt_id) S.run_id = m.run_id;   // show the trial that just finished
+  loadAttempts(S.exp_id);
+}
+
+function updateDriveBar(turn, max) {
+  const bar = ge('drive-bar');
+  if (bar) { bar.style.display = ''; ge('drive-turn').textContent = turn; ge('drive-max').textContent = max; }
+}
+
+// ── Live updates ────────────────────────────────────────────────── //
+function appendHarnessLog(text) {
+  const el = ge('harness-log-stream');
+  if (!el) return;
+  String(text).split('\n').forEach(line => {
+    if (!line) return;
+    const div = document.createElement('div');
+    const isError = /error|exception|traceback|failed/i.test(line);
+    const isWarn  = /warning|warn/i.test(line);
+    div.className = 'log-line ' + (isError ? 'error' : isWarn ? 'warn' : 'info');
+    div.textContent = line;
+    el.appendChild(div);
+  });
+  el.scrollTop = el.scrollHeight;
+}
+
+function appendRunLog(text) {
+  const el = ge('run-log-stream');
+  if (!el) return;
+  String(text).split('\n').forEach(line => {
+    if (!line) return;
+    const div = document.createElement('div');
+    div.className = 'log-line ' + detectLevel(line);
+    div.textContent = line;
+    el.appendChild(div);
+  });
+  el.scrollTop = el.scrollHeight;
+}
+
+function updateTimer(elapsed, total) {
+  const bar = ge('timer-bar'); const txt = ge('timer-text');
+  if (bar) bar.style.width = `${Math.min(100, (elapsed/total)*100)}%`;
+  if (txt) txt.textContent = `${elapsed}/${total}s`;
+}
+
+function addFrame(b64, label) {
+  const fg = ge('frames-grid');
+  if (!fg) return;
+  const div = document.createElement('div'); div.className = 'frame-thumb';
+  div.innerHTML = `<img src="data:image/jpeg;base64,${b64}" loading="lazy">
+    <div class="frame-num">${esc(label)}</div>`;
+  div.onclick = () => openImg(`data:image/jpeg;base64,${b64}`);
+  fg.appendChild(div);
+  const cnt = ge('frame-count'); if (cnt) cnt.textContent = fg.querySelectorAll('.frame-thumb').length;
+}
+
+function updateTelem(data) {
+  const grid = ge('telem-grid'); if (!grid) return;
+  Object.entries(data).forEach(([k, v]) => {
+    let row = ge(`telem-${k}`);
+    if (!row) {
+      row = document.createElement('div'); row.className = 'telem-row'; row.id = `telem-${k}`;
+      row.innerHTML = `<span class="telem-key">${k.replace(/_/g,' ')}</span><span class="telem-val" id="tv-${k}">—</span>`;
+      grid.appendChild(row);
+    }
+    const el = ge(`tv-${k}`);
+    if (el) el.textContent = typeof v === 'number' ? (Number.isInteger(v) ? v : v.toFixed(3)) : String(v);
+  });
+}
+
+function setStatus(st) {
+  S.harness_status = st;
+  const chip = ge('status-chip');
+  chip.textContent = st;
+  chip.className = 'status-chip ' + (['running','generating'].includes(st) ? st : '');
+}
+
+// ── Utilities ──────────────────────────────────────────────────── //
+async function copyCode() {
+  const el = ge('code-display');
+  if (el && el.textContent) navigator.clipboard.writeText(el.textContent);
+}
+
+function openImg(src) {
+  ge('modal-img').src = src;
+  ge('img-modal').classList.add('open');
+}
+function closeModal() { ge('img-modal').classList.remove('open'); }
+
+function sysLog(msg, level) {
+  const el = ge('sys-log'); if (!el) return;
+  String(msg).split('\n').forEach(line => {
+    if (!line) return;
+    const div = document.createElement('div');
+    div.className = 'log-line ' + (level || detectLevel(line));
+    div.textContent = line;
+    el.appendChild(div);
+  });
+  el.scrollTop = el.scrollHeight;
+}
+
+function detectLevel(l) {
+  const s = l.toLowerCase();
+  if (s.includes('error')||s.includes('traceback')) return 'error';
+  if (s.includes('warn')) return 'warn';
+  if (s.includes('[harness]')||s.includes('[drive]')||s.includes('[runner]')) return 'info';
+  return '';
+}
+
+// Pop-up for anything the operator must see (the System Log is only on the Config page)
+let toastTimer;
+function notify(text) {
+  sysLog(text, 'warn');
+  const t = ge('toast'); t.textContent = text; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 8000);
+}
+
+function ge(id) { return document.getElementById(id); }
+function asList(x) { return Array.isArray(x) ? x : []; }   // error responses are objects
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+async function api(url, method='GET', body=null) {
+  const opts = {method, headers: body ? {'Content-Type':'application/json'} : {}};
+  if (body) opts.body = JSON.stringify(body);
+  try {
+    const r = await fetch(url, opts);
+    const text = await r.text();
+    let data;
+    try { data = JSON.parse(text); } catch (_) { data = null; }
+    if (!r.ok) {
+      const error = (data && (data.error || data.detail)) || `${r.status} ${r.statusText}`;
+      sysLog(`API error: ${url} — ${error}`, 'error');
+      return Object.assign(Array.isArray(data) ? {} : (data || {}), {ok: false, error});
+    }
+    return data ?? {};
+  } catch(e) { sysLog(`API error: ${url} — ${e}`, 'error'); return {ok: false, error: String(e)}; }
+}
+
+// ── Init ───────────────────────────────────────────────────────── //
+document.addEventListener('DOMContentLoaded', () => {
+  connectWS();
+  loadConfig();
+  // Camera img always tries to load
+  ge('cam-img').src = '/api/camera/stream';
+});
+</script>
+</body>
+</html>

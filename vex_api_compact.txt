@@ -1,0 +1,170 @@
+VEX AIM Python API — Compact Reference
+=======================================
+Your program runs on a host computer and controls the robot over Wi-Fi through the
+VEX AIM WebSocket Python client.
+Field: ~400mm×400mm. Holonomic drive: the robot can move in any direction without turning.
+
+== REQUIRED BOILERPLATE (copy these exact lines at the top of every script) ==
+
+from vex import *
+import math
+import random
+
+robot = Robot()          # connects to the robot; also resets heading to 0
+timer = Timer()
+
+robot.vision.model_detection(True)   # AI objects (balls, barrels, robots)
+robot.vision.tag_detection(True)     # AprilTags
+
+robot.inertial.reset_heading()
+robot.inertial.reset_rotation()
+robot.set_xy_position(0, 0)          # odometry is NOT reset automatically between programs
+
+== MOTION ==
+
+Angles for move_*: 0=forward, 90=right, 180=backward, 270 (or -90)=left, relative to
+the direction the robot is currently facing. Range -360 to 360.
+Velocity: PERCENT (default units) 0-100, or MMPS 0-200. 100% move = 200 mm/s.
+Default move velocity = 100 mm/s (50%); default turn velocity = 75 deg/s (~42%).
+100% turn = 180 deg/s (units DPS also accepted, max 180).
+
+robot.move_at(angle, velocity=None, units=PERCENT)
+  # NON-blocking: keeps moving until another motion command or stop_all_movement()
+robot.move_for(distance_mm, angle, velocity=None, units=PERCENT, wait=True)
+  # e.g. robot.move_for(300, 0, 50) moves 300mm forward at 50%. Negative distance = reverse.
+  # wait=True blocks until done; wait=False returns immediately.
+robot.move_with_vectors(forwards, rightwards, rotation)
+  # each -100..100 %; positive rotation = clockwise. NON-blocking, keeps going until stopped.
+robot.turn(LEFT, velocity=None)       # NON-blocking continuous turn (RIGHT = clockwise)
+robot.turn_for(RIGHT, angle_deg, velocity=None, units=PERCENT, wait=True)
+robot.turn_to(heading_deg, velocity=None, units=PERCENT, wait=True)
+  # absolute heading; heading must be strictly between -360 and 360 (else ValueError)
+robot.stop_all_movement()
+robot.set_move_velocity(50, PERCENT)  # default for later commands that omit velocity
+robot.set_turn_velocity(50, PERCENT)
+
+!! Blocking commands (move_for/turn_for/turn_to with wait=True) give up after 10 SECONDS:
+   the client prints "... wait timed out, stopping", stops the robot and continues.
+   Keep each blocking move short enough to finish in < 10 s (e.g. ≤ 900 mm at 50%).
+
+robot.is_move_active()   # True while a move_at/move_for is active
+robot.is_turn_active()   # True while a turn/turn_for/turn_to is active
+robot.is_stopped()       # True if no wheel movement
+
+== POSITION (odometry, mm) ==
+
+robot.get_x_position()   # float mm; +x = right
+robot.get_y_position()   # float mm; +y = forward
+  # axes are relative to the heading at the last reset_heading() (i.e. the start)
+robot.set_xy_position(x, y)   # define the current position (call (0, 0) at start)
+Odometry comes from wheel motion, so it drifts and does not see the robot being pushed.
+
+== INERTIAL ==
+
+robot.inertial.get_heading()     # 0-359.99 deg, 0 = facing at start, increases turning RIGHT
+robot.inertial.get_rotation()    # cumulative deg (right +, left -, can exceed ±360)
+robot.inertial.reset_heading()   # current direction becomes heading 0
+robot.inertial.set_heading(deg)
+robot.inertial.reset_rotation()
+robot.inertial.get_pitch()       # -90..90
+robot.inertial.get_roll()        # -180..180
+
+== KICKER ==
+
+robot.kicker.kick(KickType.HARD)    # KickType.SOFT / KickType.MEDIUM / KickType.HARD
+robot.kicker.place()                # same as a SOFT kick in this client
+# The kicker only affects an object held in the front of the robot. Kick is non-blocking.
+
+== AI VISION CAMERA (robot.vision) ==
+
+# Built-in forward-facing camera. Frame 320×240 px, origin top-left, center (160, 120).
+# Detection must be enabled (see boilerplate). Data refreshes ~10-20 times per second;
+# after moving, wait ~100-200 ms before trusting a new reading.
+
+# Signatures for get_data:
+#   AiVision.ALL_AIOBJS  — all AI objects
+#   AiObjdesc(n)         — one AI class: 0=SportsBall, 1=BlueBarrel, 2=OrangeBarrel, 3=Robot
+#   AiVision.ALL_TAGS    — all AprilTags
+#   Tagdesc(n)           — one AprilTag ID (0-37)
+
+objs = robot.vision.get_data(AiVision.ALL_AIOBJS)   # list, largest→smallest by area
+ball = robot.vision.get_data(AiObjdesc(0), 1)       # optional 2nd arg: max results (default 8, max 24)
+tag5 = robot.vision.get_data(Tagdesc(5))            # only AprilTag #5
+
+# get_data() returns an EMPTY list when nothing matches — check before indexing,
+# otherwise objs[0] raises IndexError. (obj.exists is always True — don't rely on it.)
+if objs:
+    obj = objs[0]
+
+# Object properties:
+obj.centerX   # x of object center, 0-320 (160 = centered)
+obj.centerY   # y of object center, 0-240 (larger = lower in image = usually closer)
+obj.originX   # top-left corner x
+obj.originY   # top-left corner y
+obj.width     # width in pixels (larger = closer)
+obj.height    # height in pixels
+obj.bearing   # degrees left(-)/right(+) of the robot's front; 0 = straight ahead
+obj.id        # AI class id or AprilTag id
+obj.classname # AI objects only: "SportsBall", "BlueBarrel", "OrangeBarrel", "Robot"
+obj.score     # AI objects only: confidence 0-100
+
+robot.has_sports_ball()    # True if a ball is sitting in the kicker
+robot.has_blue_barrel()
+robot.has_orange_barrel()
+robot.has_any_barrel()
+# These are vision-based (object low and centered in the camera image), so they need
+# model_detection(True) and can briefly read True when an object is just in front.
+
+== TIMING & THREADS ==
+
+wait(500, MSEC)     # block 500 ms (wait(n) with no units = milliseconds)
+wait(1, SECONDS)
+
+timer.time(SECONDS)   # elapsed seconds (float); timer.time() = milliseconds (int)
+timer.reset()
+
+def task():
+    while running:          # use a flag: a `while True` thread keeps the program alive
+        wait(50, MSEC)
+running = True
+Thread(task)   # starts immediately in the background
+
+# The program is stopped when the game time runs out; the robot stops when the program ends.
+
+== USEFUL PATTERNS (examples only — adapt them to your game) ==
+
+# Turn toward a sports ball and approach it
+ball = robot.vision.get_data(AiObjdesc(0))
+if ball:
+    if abs(ball[0].bearing) > 5:
+        robot.turn(LEFT if ball[0].bearing < 0 else RIGHT, 20)
+    else:
+        robot.move_at(0, 30)   # move forward toward ball
+else:
+    robot.stop_all_movement()
+
+# Holonomic approach: drive straight at an object's bearing without turning
+tag = robot.vision.get_data(Tagdesc(5))
+if tag:
+    robot.move_at(tag[0].bearing, 40)
+
+== LOGGING — REQUIRED ==
+
+You MUST use print() extensively throughout your code to log what is happening.
+This is how we debug your strategy after the run. Without logs, we cannot tell
+what the robot saw or decided. Log every important decision and sensor reading.
+
+Example logging (from a ball-handling game — log whatever matters for YOUR game):
+  print(f"Step: moving toward ball")
+  ball = robot.vision.get_data(AiObjdesc(0))
+  if ball:
+      print(f"Ball detected: bearing={ball[0].bearing:.1f}, width={ball[0].width}")
+  else:
+      print("Ball not detected")
+  print(f"t={timer.time(SECONDS):.1f}s heading={robot.inertial.get_heading():.1f} "
+        f"x={robot.get_x_position():.0f} y={robot.get_y_position():.0f}")
+  print(f"Has ball: {robot.has_sports_ball()}")
+  print(f"Kicking with HARD force")
+  robot.kicker.kick(KickType.HARD)
+
+Log at every major step: what you see, what you decide, what action you take.
