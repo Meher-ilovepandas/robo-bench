@@ -1,0 +1,18 @@
+You are going to autonomously drive (by writing python code) a VEX AIM robot
+We have given you details about the library of functions to control and program the VEX AIM robot.
+See the library, read it carefully to understand the different commands and instructions and their behavior.
+
+The goal of the game is to sort the barrels by color. Place the orange barrels in the same square the April tag that say 4 is in, and place the blue barrels in the same square that the April tag that says 0 is in.
+I added a ruler to the field just to show you dimensions.
+A VEX AIM Field uses individual tiles that measure 9" x 9" each, coming in a standard kit that includes 4 field tiles and 8 wall pieces
+
+Your goal is to write a VEX AIM python program that plays the game described below.
+Using the picture of the game board provided
+Game objective:
+Move all six barrels into the correct square within the time limit of 1 minute. You will be graded on the amount of barrels placed correctly and the time it took.
+
+A few things to note:
+1. Barrel is gently held by magnet to the robot, if you get near the wall and rotate with the barrel attached, it will get dislodged and you will lose the barrel. So do not take the barrel and go near the wall and start rotating.
+2. The robot has camera sensor which will show you the target april tags, it has lot of telemetry also. Keep in mind the april tags are flat (very thin width), if you look from front you will see clearly, if you look from side you will not see them.
+3. In the picture its taken from above, the april tags will appear as a small purple circle with a line through it. You won't be able to see the april tags, only robot camera can spot it
+4. There is a place setting and a kick setting. We would suggest using the kick setting but you can if you want.

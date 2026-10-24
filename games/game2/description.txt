@@ -1,0 +1,18 @@
+You are going to autonomously drive (by writing python code) a VEX AIM robot
+We have given you details about the library of functions to control and program the VEX AIM robot.
+See the library, read it carefully to understand the different commands and instructions and their behavior.
+
+The goal of the game is to knock down the 2 purple, April tag and the robot will be in the same place at the start of each turn. Once you have done that you have completed the game.
+I added a ruler to the field just to show you dimensions.
+A VEX AIM Field uses individual tiles that measure 9" x 9" each, coming in a standard kit that includes 4 field tiles and 8 wall pieces
+
+Your goal is to write a VEX AIM python program that plays the game described below.
+Using the picture of the game board provided
+Game objective:
+Grab the yellow ball by moving close to it (its magnetic so it will roll and attach if you get close enough). and then hit the purple targets (Apri Tags) using the ball. Do not ram into the tags.
+
+A few things to note:
+1. Ball is gently held by magnet to the robot, if you get near the wall and rotate with the ball attached, it will get dislodged and you will lose the ball. So do not take the ball and go near the wall and start rotating.
+2. The robot has camera sensor which will show you the target april tags, it has lot of telemetry also. Keep in mind the april tags are flat (very thin width), if you look from front you will see clearly, if you look from side you will not see them.
+3. In the picture its taken from above, the april tags will appear as a small purple circle with a line through it. You won't be able to see the april tags, only robot camera can spot it
+4. You will have to go grab the ball again after hitting the first tag that way you can hit the next one.
